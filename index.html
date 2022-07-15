@@ -1,0 +1,88 @@
+<style>
+	div {
+		border: 1px solid gray;
+		width: 50px;
+		height: 50px;
+		margin: 1px;
+		user-select: none;
+	}
+	div:hover {
+		cursor: pointer;
+	}
+</style>
+
+<script>
+	let down = false;
+	const playing = {};
+	let context;
+	const stopAll = () => {
+		Object.keys(playing).forEach((freq) => stop(freq));
+	}
+	const stop = (freq) => {
+		const gainNode = playing[freq];
+		if (gainNode) {
+			gainNode.gain.setTargetAtTime(0, context.currentTime + 0.01, 0.01);
+		}
+		delete playing[freq];
+	};
+	const play = (freq) => {
+		if (!context) {
+			context = new AudioContext();
+		}
+		if (!playing[freq]) {
+			oscillator = context.createOscillator();
+			oscillator.type = 'sine';
+			oscillator.frequency.value = freq;
+			const gainNode = context.createGain();
+			oscillator.connect(gainNode);
+			gainNode.connect(context.destination);
+			playing[freq] = gainNode;
+		} else {
+			return;
+		}
+		const gainNode = playing[freq];
+		oscillator.start(0);
+		gainNode.gain.setValueAtTime(0, context.currentTime);
+		gainNode.gain.setTargetAtTime(1, context.currentTime + 0.01, 0.01);
+	};
+	const keyOnMouseDown = (event) => {
+		down = true;
+		play(+event.target.getAttribute('freq'));
+	};
+	const keyOnMouseUp = (event) => {
+		down = false;
+		stop(+event.target.getAttribute('freq'));
+	};
+	const keyOnMouseUpOnBody = (event) => {
+		down = false;
+		stopAll();
+	};
+	const keyOnMouseOver = (event) => {
+		if (down) {
+			play(+event.target.getAttribute('freq'));
+		}
+	};
+	const keyOnMouseOut = (event) => {
+		if (down) {
+			stop(+event.target.getAttribute('freq'));
+		}
+	};
+</script>
+
+<script>
+	const init = () => {
+		const keys = document.querySelectorAll('div');
+		keys.forEach((key) => {
+			key.addEventListener('mousedown', keyOnMouseDown);
+			key.addEventListener('mouseup', keyOnMouseUp);
+			key.addEventListener('mouseover', keyOnMouseOver);
+			key.addEventListener('mouseout', keyOnMouseOut);
+		});
+		document.body.addEventListener('mouseup', keyOnMouseUpOnBody);
+	};
+	window.addEventListener('load', init);
+</script>
+
+<div freq="261.63"> c </div>
+<div freq="329.63"> e </div>
+<div freq="392"> g </div>
